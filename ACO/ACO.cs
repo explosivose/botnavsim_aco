@@ -82,7 +82,8 @@ namespace ACO {
 
 
 		public float spacing { get; private set; }
-		private int X, Y;
+		public int X {get; private set;}
+		public int Y {get; private set;}
 		private Node[,] nodes;
 		private HashSet<Arc> arcs;
 
@@ -247,39 +248,57 @@ namespace ACO {
 		public enum Mode { forward, backward }
 
 		public Ant(SquareGraph graph, Node origin, Node destination) {
-			mode = Mode.forward;
 			myNode = origin;
-			myPath = new List<Node>();
-			myPath.Add(myNode);
+			nest = origin;
+			myPath = new List<Arc>();
 			food = destination;
 			g = graph;
+			mode = Mode.forward;
 		}
 
 		public Node myNode {get; private set;}
+		public Mode mode {
+			get { return _mode; }
+			set {
+				_mode = value;
+				if (_mode == Mode.forward) {
+					debugColor = Color.black;
+					debugColor.a = 0.01f;
+				} else if (_mode == Mode.backward) {
+					debugColor = Color.white;
+					debugColor.a = 0.1f;
+					tau = Mathf.Max(g.X, g.Y)/(float)myPath.Count;
+				} else {
+					Debug.LogError("ACO: Ant Mode invalid!");
+					mode = Mode.forward;
+				}
+			}
+		}
 
-		private Mode mode;
+		private Mode _mode;
 		private Node food;
+		private Node nest;
 		private Color debugColor;
 		private SquareGraph g;
 		private List<Arc> myArcs;
-		private List<Node> myPath;
+		private List<Arc> myPath;
+		private float tau;
 
 		public void DrawDebug() {
-			if (mode == Mode.forward) {
-				debugColor = Color.black;
-				debugColor.a = 0.1f;
-			}
-			else if (mode == Mode.backward) {
-				debugColor = Color.white;
-				debugColor.a = 1f;
-			}
-			for(int i = 0; i < myPath.Count-1; i++) {
+			if (myPath.Count < 1) return;
+			for(int i = 0; i < myPath.Count; i++) {
 				Draw.Instance.Line(
-					myPath[i].position,
-					myPath[i+1].position, 
+					myPath[i].node0.position,
+					myPath[i].node1.position, 
 					debugColor);
-
 			}
+			Vector3 myPosition = myPath[myPath.Count-1].node0.position;
+			myPosition += myPath[myPath.Count-1].node1.position;
+			myPosition /= 2f;
+			Draw.Instance.Cube(
+				myPosition,
+				Vector3.one,
+				debugColor);
 		}
 
 		public void Update() {
@@ -302,13 +321,10 @@ namespace ACO {
 				Debug.LogError("ACO: Ant on disconnected Node");
 				return;
 			}
-
-			// remove the arc that leads to the previous node in my path
-			for (int i = 0; i < myArcs.Count; i++) {
-				if (myArcs[i].ConnectedTo(myPath[myPath.Count-1])) {
-					myArcs.Remove(myArcs[i]);
-					break;
-				}
+			else {
+				// remove the arc that leads to the previous node in my path
+				if (myPath.Count > 0)
+					myArcs.Remove(myPath[myPath.Count-1]);
 			}
 
 			// calculate probabilities for each arc
@@ -344,10 +360,10 @@ namespace ACO {
 				myNode = selection.node0;
 			}
 			else {
-				Debug.LogError("ACO: somehow selected arc not connected to myNode");
+				Debug.LogError("ACO: Ant in forward mode somehow selected arc not connected to myNode");
 			}
 
-			myPath.Add(myNode);
+			myPath.Add(selection);
 
 			// if we found the food 
 			if (myNode == food) {
@@ -359,7 +375,23 @@ namespace ACO {
 		// in backward mode ants follow their own path back to the origin
 		// dropping pheromone
 		private void BackwardUpdate() {
-
+			// move to next node in path
+			Arc selection = myPath[myPath.Count-1];
+			/*if (myNode == selection.node0) {
+				myNode = selection.node1;
+			}
+			else if (myNode == selection.node1) {
+				myNode = selection.node0;
+			}
+			else {
+				Debug.LogError("ACO: Ant in backward mode somehow selected arc not connected to myNode");
+			}*/
+			selection.pheromone += tau;
+			myPath.Remove(selection);
+			if (myPath.Count < 1) {
+				myNode = nest;
+				mode = Mode.forward;
+			}
 		}
 
 		private void EliminateLoopsInMyPath(int scanIndex = 0) {
@@ -416,12 +448,13 @@ namespace ACO {
 			ants = new List<Ant>();
 			Node nest = graph.NearestNode(origin);
 			Node food = graph.NearestNode(destination);
-			for (int i = 0; i < 21; i++)
+			for (int i = 0; i < 100; i++)
 				ants.Add(new Ant(graph, nest, food));
 
 			for(int i = 0; i < 1000; i++) {
 				foreach(Ant ant in ants) {
 					ant.Update();
+
 				}
 				yield return new WaitForEndOfFrame();
 			}
