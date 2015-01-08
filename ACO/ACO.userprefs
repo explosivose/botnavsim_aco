@@ -1,0 +1,13 @@
+﻿<Properties>
+  <MonoDevelop.Ide.Workspace />
+  <MonoDevelop.Ide.Workbench ActiveDocument="..\..\..\botnavsim\Assets\botnavsim\Scripts\Camera\CamController.cs">
+    <Files>
+      <File FileName="..\..\..\botnavsim\Assets\botnavsim\Scripts\Camera\CamController.cs" Line="151" Column="1" />
+      <File FileName="..\..\..\botnavsim\Assets\botnavsim\Scripts\Robots\Robot.cs" Line="22" Column="20" />
+    </Files>
+  </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore />
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+</Properties>

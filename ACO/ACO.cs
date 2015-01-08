@@ -481,7 +481,9 @@ namespace ACO {
 		}
 
 		public void DrawDebugInfo () {
+			if (graph == null) return;
 			graph.DrawDebug();
+			if (ants == null) return;
 			foreach(Ant ant in ants) {
 				ant.DrawDebug();
 			}
